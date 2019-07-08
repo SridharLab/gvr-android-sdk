@@ -204,11 +204,16 @@ public class VideoSceneRenderer implements Renderer {
   }
 
   private void updateHeadAndEyeMatrices() {
-    api.getHeadSpaceFromStartSpaceRotation(
-        headFromWorld, System.nanoTime() + predictionOffsetNanos);
+    api.getHeadSpaceFromStartSpaceTransform(headFromWorld,System.nanoTime() + predictionOffsetNanos);
+
+    // CWV - compute inverse the head transform
+    float[] invHeadFromWorld = new float[16];
+    Matrix.invertM(invHeadFromWorld, 0, headFromWorld, 0);
+
     for (int eye = 0; eye < 2; ++eye) {
       api.getEyeFromHeadMatrix(eye, eyeFromHead);
       Matrix.multiplyMM(eyeFromWorld[eye], 0, eyeFromHead, 0, headFromWorld, 0);
+      Matrix.multiplyMM(eyeFromWorld[eye], 0, invHeadFromWorld, 0, eyeFromWorld[eye], 0);
     }
     if (gvrAudioProcessor != null) {
       // Extract orientation quaternion from the head-from-world matrix.

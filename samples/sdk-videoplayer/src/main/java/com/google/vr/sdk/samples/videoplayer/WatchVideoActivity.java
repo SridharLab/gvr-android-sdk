@@ -174,7 +174,17 @@ public class WatchVideoActivity extends Activity {
       // The device does not support this API, video will not play.
       Log.e(TAG, "UnsupportedException: Async Reprojection with Video is unsupported.");
     } else {
+
+
       initVideoPlayer();
+
+//      //CWV disable async reprojection to remove wobble in fixed-to-head view
+//      if (gvrLayout.setAsyncReprojectionEnabled(false)) {
+//        // Async reprojection decouples the app framerate from the display framerate,
+//        // allowing immersive interaction even at the throttled clockrates set by
+//        // sustained performance mode.
+//        com.google.vr.sdk.base.AndroidCompat.setSustainedPerformanceMode(this, true);
+//      }
 
       // The default value puts the viewport behind the eye, so it's invisible. Set the transform
       // now to ensure the video is visible when rendering starts.
