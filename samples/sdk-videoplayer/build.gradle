@@ -45,4 +45,5 @@ dependencies {
 
     implementation 'com.google.vr:sdk-audio:1.190.0'
     implementation 'com.google.vr:sdk-base:1.190.0'
+    implementation 'com.android.support:support-compat:26.0.0'
 }

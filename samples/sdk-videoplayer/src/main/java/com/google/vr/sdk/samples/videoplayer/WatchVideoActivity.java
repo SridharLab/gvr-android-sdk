@@ -15,12 +15,18 @@
  */
 package com.google.vr.sdk.samples.videoplayer;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -48,6 +54,7 @@ import com.google.vr.ndk.base.GvrLayout.ExternalSurfaceListener;
  */
 public class WatchVideoActivity extends Activity {
   private static final String TAG = WatchVideoActivity.class.getSimpleName();
+  private static final Integer READ_STORAGE_PERMISSION_REQUEST_CODE = 666;
 
   private GvrLayout gvrLayout;
   private GLSurfaceView surfaceView;
@@ -61,32 +68,32 @@ public class WatchVideoActivity extends Activity {
   // is column-major, so the translation is on the last row rather than the last column in this
   // representation.
   private final float[] videoTransform = {
-    1.6f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.9f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 0.0f,
-    0.0f, 0.0f, -4.f, 1.0f
+          1.6f, 0.0f, 0.0f, 0.0f,
+          0.0f, 0.9f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, -4.f, 1.0f
   };
 
   // Runnable to refresh the viewer profile when gvrLayout is resumed.
   // This is done on the GL thread because refreshViewerProfile isn't thread-safe.
   private final Runnable refreshViewerProfileRunnable =
-      new Runnable() {
-        @Override
-        public void run() {
-          gvrLayout.getGvrApi().refreshViewerProfile();
-        }
-      };
+          new Runnable() {
+            @Override
+            public void run() {
+              gvrLayout.getGvrApi().refreshViewerProfile();
+            }
+          };
 
   // Runnable to play/pause the video player. Must be run on the UI thread.
   private final Runnable triggerRunnable =
-      new Runnable() {
-          @Override
-          public void run() {
-            if (videoPlayer != null) {
-              videoPlayer.togglePause();
+          new Runnable() {
+            @Override
+            public void run() {
+              if (videoPlayer != null) {
+                videoPlayer.togglePause();
+              }
             }
-          }
-      };
+          };
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -95,16 +102,16 @@ public class WatchVideoActivity extends Activity {
 
     setImmersiveSticky();
     getWindow()
-        .getDecorView()
-        .setOnSystemUiVisibilityChangeListener(
-            new View.OnSystemUiVisibilityChangeListener() {
-              @Override
-              public void onSystemUiVisibilityChange(int visibility) {
-                if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-                  setImmersiveSticky();
-                }
-              }
-            });
+            .getDecorView()
+            .setOnSystemUiVisibilityChangeListener(
+                    new View.OnSystemUiVisibilityChangeListener() {
+                      @Override
+                      public void onSystemUiVisibilityChange(int visibility) {
+                        if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                          setImmersiveSticky();
+                        }
+                      }
+                    });
 
     AndroidCompat.setSustainedPerformanceMode(this, true);
     AndroidCompat.setVrModeEnabled(this, true);
@@ -120,48 +127,48 @@ public class WatchVideoActivity extends Activity {
     // Initialize the ExternalSurfaceListener to receive video Surface callbacks.
     hasFirstFrame = false;
     ExternalSurfaceListener videoSurfaceListener =
-        new ExternalSurfaceListener() {
-          @Override
-          public void onSurfaceAvailable(Surface surface) {
-            // Set the surface for the video player to output video frames to. Video playback
-            // is started when the Surface is set. Note that this callback is *asynchronous* with
-            // respect to the Surface becoming available, in which case videoPlayer may be null due
-            // to the Activity having been stopped.
-            Log.i(TAG, "onSurfaceAvailable: " + surface);
-            if (videoPlayer != null) {
-              videoPlayer.setSurface(surface);
-              Log.i(TAG, "Video surface set on player.");
-            }
-          }
+            new ExternalSurfaceListener() {
+              @Override
+              public void onSurfaceAvailable(Surface surface) {
+                // Set the surface for the video player to output video frames to. Video playback
+                // is started when the Surface is set. Note that this callback is *asynchronous* with
+                // respect to the Surface becoming available, in which case videoPlayer may be null due
+                // to the Activity having been stopped.
+                Log.i(TAG, "onSurfaceAvailable: " + surface);
+                if (videoPlayer != null) {
+                  videoPlayer.setSurface(surface);
+                  Log.i(TAG, "Video surface set on player.");
+                }
+              }
 
-          @Override
-          public void onFrameAvailable() {
-            displayedFrameCount++;
-            // If this is the first frame, and the Activity is still in the foreground, signal to
-            // remove the loading splash screen, and draw alpha 0 in the color buffer where the
-            // video will be drawn by the GvrApi.
-            if (!hasFirstFrame && videoPlayer != null) {
-              surfaceView.queueEvent(
-                  new Runnable() {
-                    @Override
-                    public void run() {
-                      Log.i(TAG, "Video has started playback, update renderer.");
-                      renderer.setHasVideoPlaybackStarted(true);
-                    }
-                  });
+              @Override
+              public void onFrameAvailable() {
+                displayedFrameCount++;
+                // If this is the first frame, and the Activity is still in the foreground, signal to
+                // remove the loading splash screen, and draw alpha 0 in the color buffer where the
+                // video will be drawn by the GvrApi.
+                if (!hasFirstFrame && videoPlayer != null) {
+                  surfaceView.queueEvent(
+                          new Runnable() {
+                            @Override
+                            public void run() {
+                              Log.i(TAG, "Video has started playback, update renderer.");
+                              renderer.setHasVideoPlaybackStarted(true);
+                            }
+                          });
 
-              hasFirstFrame = true;
-            }
-          }
-        };
+                  hasFirstFrame = true;
+                }
+              }
+            };
 
     // Note that enabling video Surface support will also enable async reprojection.
     boolean isAsyncReprojectionEnabled =
-        gvrLayout.enableAsyncReprojectionVideoSurface(
-            videoSurfaceListener,
-            new Handler(Looper.getMainLooper()),
-            /* Whether video playback should use a protected reprojection pipeline. */
-            settings.useDrmVideoSample);
+            gvrLayout.enableAsyncReprojectionVideoSurface(
+                    videoSurfaceListener,
+                    new Handler(Looper.getMainLooper()),
+                    /* Whether video playback should use a protected reprojection pipeline. */
+                    settings.useDrmVideoSample);
 
     if (!isAsyncReprojectionEnabled) {
       // The device does not support this API, video will not play.
@@ -179,16 +186,16 @@ public class WatchVideoActivity extends Activity {
       // Simulate cardboard trigger to play/pause video playback.
       gvrLayout.enableCardboardTriggerEmulation(triggerRunnable);
       surfaceView.setOnTouchListener(
-          new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-              if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                triggerRunnable.run();
-                return true;
-              }
-              return false;
-            }
-          });
+              new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View view, MotionEvent event) {
+                  if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    triggerRunnable.run();
+                    return true;
+                  }
+                  return false;
+                }
+              });
     }
 
     // Set the renderer and start the app's GL thread.
@@ -199,22 +206,25 @@ public class WatchVideoActivity extends Activity {
 
   private void initVideoPlayer() {
     videoPlayer = new VideoExoPlayer2(getApplication(), settings);
-    Uri streamUri;
+    Uri videoUri;
     String drmVideoId = null;
 
-    if (settings.useDrmVideoSample) {
-      // Protected video, requires a secure path for playback.
-      Log.i(TAG, "Using DRM-protected video sample.");
-      streamUri = Uri.parse("https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd");
-      drmVideoId = "0894c7c8719b28a0";
-    } else {
-      // Unprotected video, does not require a secure path for playback.
-      Log.i(TAG, "Using cleartext video sample.");
-      streamUri = Uri.parse("https://storage.googleapis.com/wvmedia/clear/h264/tears/tears.mpd");
-    }
+//    if (settings.useDrmVideoSample) {
+//      // Protected video, requires a secure path for playback.
+//      Log.i(TAG, "Using DRM-protected video sample.");
+//      videoUri = Uri.parse("https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd");
+//      drmVideoId = "0894c7c8719b28a0";
+//    } else {
+//      // Unprotected video, does not require a secure path for playback.
+//      Log.i(TAG, "Using cleartext video sample.");
+//      videoUri = Uri.parse("https://storage.googleapis.com/wvmedia/clear/h264/tears/tears.mpd");
+//    }
+
+    String fpath = "/amb_test.mp4"; //upload file to device and add path
+    videoUri = Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).getAbsolutePath()+fpath);
 
     try {
-      videoPlayer.initPlayer(streamUri, drmVideoId);
+      videoPlayer.initPlayer(videoUri, drmVideoId);
       renderer.setVideoPlayer(videoPlayer);
     } catch (UnsupportedDrmException e) {
       Log.e(TAG, "Error initializing video player", e);
@@ -222,20 +232,47 @@ public class WatchVideoActivity extends Activity {
     displayedFrameCount = 0;
   }
 
+  public boolean checkPermissionForReadExtertalStorage() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      int result = this.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
+      return result == PackageManager.PERMISSION_GRANTED;
+    }
+    return false;
+  }
+
+  public void requestPermissionForReadExternalStorage() throws Exception {
+    try {
+      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+              READ_STORAGE_PERMISSION_REQUEST_CODE);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw e;
+    }
+  }
+
   @Override
   protected void onStart() {
     super.onStart();
+
+    if (!checkPermissionForReadExtertalStorage()) {
+      try {
+        requestPermissionForReadExternalStorage();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
     if (videoPlayer == null) {
       initVideoPlayer();
     }
     hasFirstFrame = false;
     surfaceView.queueEvent(
-        new Runnable() {
-          @Override
-          public void run() {
-            renderer.setHasVideoPlaybackStarted(false);
-          }
-        });
+            new Runnable() {
+              @Override
+              public void run() {
+                renderer.setHasVideoPlaybackStarted(false);
+              }
+            });
 
     // Resume the surfaceView and gvrLayout here. This will start the render thread and trigger a
     // new async reprojection video Surface to become available.
@@ -289,7 +326,7 @@ public class WatchVideoActivity extends Activity {
   public boolean dispatchKeyEvent(KeyEvent event) {
     // Avoid accidental volume key presses while the phone is in the VR headset.
     if (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP
-        || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN) {
       return true;
     }
     return super.dispatchKeyEvent(event);
@@ -311,14 +348,14 @@ public class WatchVideoActivity extends Activity {
 
   private void setImmersiveSticky() {
     getWindow()
-        .getDecorView()
-        .setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            .getDecorView()
+            .setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
   }
 
   /**
