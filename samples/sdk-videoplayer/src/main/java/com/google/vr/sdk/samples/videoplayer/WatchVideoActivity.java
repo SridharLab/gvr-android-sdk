@@ -64,12 +64,22 @@ public class WatchVideoActivity extends Activity {
   private boolean hasFirstFrame;
   private int displayedFrameCount;
 
-  // Transform a quad that fills the clip box at Z=0 to a 16:9 screen at Z=-4. Note that the matrix
+//  // Transform a quad that fills the clip box at Z=0 to a 16:9 screen at Z=-4. Note that the matrix
+//  // is column-major, so the translation is on the last row rather than the last column in this
+//  // representation.
+//  private final float[] videoTransform = {
+//          1.6f, 0.0f, 0.0f, 0.0f,
+//          0.0f, 0.9f, 0.0f, 0.0f,
+//          0.0f, 0.0f, 1.0f, 0.0f,
+//          0.0f, 0.0f, -4.f, 1.0f
+//  };
+
+  // Transform a quad that fills the clip box at Z=0 to a 1:1 screen at Z=-4. Note that the matrix
   // is column-major, so the translation is on the last row rather than the last column in this
   // representation.
   private final float[] videoTransform = {
-          1.6f, 0.0f, 0.0f, 0.0f,
-          0.0f, 0.9f, 0.0f, 0.0f,
+          1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
           0.0f, 0.0f, 1.0f, 0.0f,
           0.0f, 0.0f, -4.f, 1.0f
   };
